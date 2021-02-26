@@ -127,7 +127,7 @@ While I had been doing some rough confirmation of performance using the approach
 
 After all that listening, I finally had some ground truth data. With this, I could generate a confusion matrix.
 
-![Evaluation Confusion Matrix]("./media/eval-confusion.png") 
+![Evaluation Confusion Matrix]("media/eval-confusion.png") 
 
 
 
