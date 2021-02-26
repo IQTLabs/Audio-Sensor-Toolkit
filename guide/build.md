@@ -127,68 +127,77 @@ While I had been doing some rough confirmation of performance using the approach
 
 After all that listening, I finally had some ground truth data. With this, I could generate a confusion matrix.
 
-![Evaluation Confusion Matrix]("media/eval-confusion.png") 
+![Evaluation Confusion Matrix](media/eval-confusion.png) 
 
-
-
-		Predicted
-	 	Noise	Siren
-Actual	Noise	24273	5
-	Siren	22	22
 
 At first glance, it looked like a bit of a mixed bag. The good news was that there were very few false positives. That less good news was that when there were sirens, it only recognized them about half the time. A little dismayed, I decided to dig into the numbers and it turns out that the story was a little more complex that it initially appeared. For the evaluation, I had set a confidence threshold of greater than 80% for declaring something a siren. If it is adjusted to be great or equal to 75, you would detect an additional 3 sirens, while only adding 2 additional false positives. 
 
 It is more interesting to look at things as being events, instead of single instances. This lets us see how we are doing at detecting when an emergency vehicle passes by.
 
+### Siren Event 1
  
-Prediction	Timestamp	Confidence	Ground Truth
-siren	14:19:04	82	TRUE
-noise	14:19:08	77	TRUE
-noise	14:19:11	1	TRUE
-noise	14:19:36	0	TRUE
-siren	14:19:39	82	TRUE
-siren	14:19:43	99	TRUE
-siren	14:19:46	99	TRUE
-noise	14:19:50	75	TRUE
-siren	14:19:53	99	TRUE
-siren	14:19:57	99	TRUE
-siren	14:20:00	99	TRUE
-noise	14:20:04	13	TRUE
-noise	14:20:07	80	TRUE
-siren	14:20:11	99	TRUE
-siren	14:20:14	98	TRUE
-siren	14:20:18	92	TRUE
-siren	14:20:21	98	TRUE
-noise	14:20:25	24	TRUE
-noise	14:20:28	2	TRUE
-noise	14:20:32	0	TRUE
- 	 	 	 
-siren	23:13:15	98	TRUE
-siren	23:13:18	99	TRUE
-noise	23:13:21	55	TRUE
-noise	23:13:27	17	TRUE
-siren	23:13:30	99	TRUE
-siren	23:13:33	99	TRUE
-noise	23:13:36	0	TRUE
- 	 	 	 
-siren	6:58:48	85	TRUE
- 	 	 	 
-noise	9:36:25	1	TRUE
-noise	9:36:29	0	TRUE
-noise	9:36:33	0	TRUE
-noise	9:36:37	1	TRUE
-noise	9:36:41	0	TRUE
-noise	9:36:45	3	TRUE
-siren	9:36:49	82	 TRUE
-siren	9:36:53	98	 TRUE
-siren	9:36:57	89	 TRUE
-noise	9:37:01	8	TRUE
-siren	9:37:05	95	 TRUE
-siren	9:37:09	92	 TRUE
-siren	9:37:13	99	 TRUE
-noise	9:37:17	0	TRUE
-noise	9:37:21	2	TRUE
-noise	9:37:25	1	TRUE
+Prediction |	Timestamp |	Confidence | Ground Truth
+:--------:|-------------|:----------:|:-----------:	 
+siren |	14:19:04 |	82 |	TRUE
+**noise** |	14:19:08 |	**77** |	TRUE
+**noise** |	14:19:11 |	**1** |	TRUE
+**noise** |	14:19:36 |	**0** |	TRUE
+siren |	14:19:39 |	82 |	TRUE
+siren |	14:19:43 |	99 |	TRUE
+siren |	14:19:46 |	99	| TRUE
+**noise** |	14:19:50 |	**75**	| TRUE
+siren |	14:19:53 |	99	| TRUE
+siren |	14:19:57 |	99	| TRUE
+siren | 14:20:00 |	99	| TRUE
+**noise** |	14:20:04 |	**13**	| TRUE
+**noise** |	14:20:07 |	**80**	| TRUE
+siren |	14:20:11 |	99	| TRUE
+siren |	14:20:14 |	98	| TRUE
+siren |	14:20:18 |	92	| TRUE
+siren |	14:20:21 |	98	| TRUE
+**noise** |	14:20:25 |	**24**	| TRUE
+**noise** |	14:20:28 |	**2**	| TRUE
+**noise** |	14:20:32 |	**0**	| TRUE
+
+
+### Siren Event 2
+ 
+Prediction |	Timestamp |	Confidence | Ground Truth
+:--------:|-------------|:----------:|:-----------:	 	 	 	 
+siren |	23:13:15 |	98	| TRUE
+siren |	23:13:18 |	99	| TRUE
+**noise** |	23:13:21 |	**55**	| TRUE
+**noise** |	23:13:27 |	**17**	| TRUE
+siren |	23:13:30 |	99	| TRUE
+siren |	23:13:33 |	99	| TRUE
+**noise** |	23:13:36 |	**0**	| TRUE
+
+### Siren Event 3
+ 
+Prediction |	Timestamp |	Confidence | Ground Truth
+:--------:|-------------|:----------:|:-----------:	 	 	 	 
+siren |	6:58:48 |	85 |	TRUE
+
+### Siren Event 4
+ 
+Prediction |	Timestamp |	Confidence | Ground Truth
+:--------:|-------------|:----------:|:-----------:	 	 	 
+**noise** |	9:36:25 |	**1**	| TRUE
+**noise** |	9:36:29 |	**0**	| TRUE
+**noise** |	9:36:33 |	**0**	| TRUE
+**noise** |	9:36:37 |	**1**	| TRUE
+**noise** |	9:36:41 |	**0**	| TRUE
+**noise** |	9:36:45 |	**3**	| TRUE
+siren |	9:36:49 |	82	 | TRUE
+siren |	9:36:53 |	98	 | TRUE
+siren |	9:36:57 |	89	 | TRUE
+**noise** |	9:37:01 |	**8**	| TRUE
+siren |	9:37:05 |	95	 | TRUE
+siren |	9:37:09 |	92	 | TRUE
+siren |	9:37:13 |	99	 | TRUE
+**noise** |	9:37:17 |	**0**	| TRUE
+**noise** |	9:37:21 |	**2**	| TRUE
+**noise** |	9:37:25 |	**1**	| TRUE
 
 
 Things look quite a bit better. The detector didn’t miss a single event. One possible reason for the spotty performance is because emergency vehicles have a range of sounds they can make and the model maybe overtraining on one type. This goes back to better defining what constitutes a “siren”. 
