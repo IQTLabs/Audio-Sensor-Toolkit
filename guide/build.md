@@ -11,13 +11,13 @@ My general plan of attack for the project was:
 Following that general outline, I will cover how to build a dataset, training a model, deploying it, building a sensor and evaluating model performance.
 
 ## Building an initial dataset
----
+
 I was able to construct an initial dataset by finding labeled audio on the internet. The dataset should have 2 classes of audio, sirens and no sirens. Microsoft has a dataset of speech, called the Microsoft Scalable Noisy Speech Dataset, which also includes a wide selection of environmental noise. I was tipped off to this dataset from Dan Situnayake's [Bird Audio dataset creator](https://github.com/edgeimpulse/bird-data-download) which makes use of this dataset. The noise was recorded at 16kHz, which helped decide the maximum sample rate I would be using.
 
 For the siren sounds, I used the [Sounds of New York City dataset](https://wp.nyu.edu/sonyc/). The samples are labeled for the different classes of sounds that are present in it. You can download the latest version of the dataset [here](https://zenodo.org/record/3966543#.YCw-My2cbUY). Each of the samples is 10 seconds long. To pull out the samples with the sirens in them, I simply sorted the annotation file and moved the appropriate samples into a new directory. 
 
 ## Building and Training a Model
----
+
 When I first got started working with TinyML, I worked directly with the TF framework. While it is definitely doable, it is not that enjoyable. Simple tasks, especially around the pre-processing of data, always ended up being more complex than expected. 
 
 Luckily good tools have started to emerge, that are specifically designed for running ML on Edge devices. 
@@ -68,7 +68,7 @@ After you have your model, you can export it either as a library or as firmware 
 To get a sense of whether my model worked in the real world, I loaded it up onto a [Arduino Nano 33 BLE Sense](https://www.arduino.cc/en/Guide/NANO33BLESense). This board is made by Arduino, so its support within the Arduino IDE has been pretty thoroughly tested. It is also officially supported by EI. I kept the evaluation simple and pulled up some Youtube clips of sirens on my laptop. Amazingly, using salvaged audio off the internet, I was able to build a working siren detector. Of course, the real question is how it would perform in a real-world environment, against real sirens.
 
 ## Building a Sensor
----
+
 While it was amazing to be able to run an ML model on a low-power MCU, being able to run it in the real world was key. Doing this meant packaging the electronics up so they could survive the elements, making sure it has enough power and finding a way to measure performance. While the Arduino Nano 33 BLE Sense is a nice board, it is sort of limited when it comes to expandability. It has a lot of built-in in sensors, but there are not many boards available to add functionality. I wanted to add the following functionality:
 
 -	**Battery power/charging** – It is possible to power the Arduino board by connecting it to a USB battery, but it is much nicer to has a JST connection so you can directly connect a LiPo battery.
@@ -117,7 +117,7 @@ Board Pinouts:
 
 
 ## Software for the Sensor
----
+
 The software running on the sensor started from the example audio classification program provided by EI. To further improve the model, I needed to be able to evaluate how well it worked in the real world. I also wanted to also collect audio samples that could be labeled and used as training data later. Recall that the model was originally built with audio from the internet. To do both of these things, I needed to be able to record the audio captured by the dev board. Unfortunately, there are not a lot of examples on how to record audio to a file in Arduino and also how to listen to the file on a computer. Capturing digital audio is rather processor intensive. The signal needs to be sampled 10s of thousand times per second, and then has to be transferred into memory that the processor can access. On the nRF52840, this is luckily handled by a [subsystem](https://infocenter.nordicsemi.com/index.jsp?topic=%2Fcom.nordic.infocenter.sdk5.v15.0.0%2Fhardware_driver_pdm.html). All you need to do, is tell the processor the sampling mode you want to use, the gain to apply and then an interrupt to contact us on when audio samples are ready. 
 
 The processor supports a few sample rates, but the Arduino core only [supports](https://github.com/adafruit/Adafruit_nRF52_Arduino/blob/4d703b6f38262775863a16a603c12aa43d249f04/libraries/PDM/src/PDM.cpp#L66) 16khz or 41.667khz. Luckily the model was trained with 16khz audio. 
@@ -138,7 +138,7 @@ While this approach is great, it means that you are flip flopping between record
 There is an additional approach that I tried out, which allows for using a single buffer but still provides continual detection. Instead of waiting for a sample to be completely captured before running a model on it, you do being running the model on the audio as it comes in. This operates like a circular buffer. There are 2 pointers into the buffer. One for where the next bit of audio should be written to and another for where the next audio sample should be read from. When a pointer reaches the end of a buffer, it will wrap around to the beginning. For this to work, you need to make sure the reading pointer doesn’t go past the writing pointer. The audio processing and running the model also have to be faster than the rate at which new audio is coming in. If it can’t keep up there will be gaps in the audio being feed in because samples are being written over. The whole scheme is a bit complex, and I am sure there are some subtle bugs that are lurking in my implementation. The other drawback is that it would be tough to save audio samples and model predictions for them to an SD card.  However, this could be a useful technique when you are just trying to run a model continuously, but have memory constraints.
 
 ## Dataset Expansion
----
+
 With this sensor I was now able to better understand how the model worked in the real world and expand the dataset to improve the model’s performance. The sensor recorded the 2 second samples of audio it captured to a microSD card, along with a prediction from the model and its confidence. Having the prediction from the model allowed me to focus on the samples where the model was uncertain, apply labels and add them to the dataset. In reviewing the recordings, I found that there were not that many sirens detected. I reviewed all of the detections and found that the model did a remarkable job of correctly detecting sirens, even when they were distant. I did find a few false positives though. The model often mistook the warning beeps a truck makes while backing up with a siren. I corrected the labeling on those samples, but I was never able to fully prevent these false positives. I suspect that after feature extraction, backup beeps and sirens may look identical. It is possible that switching to MFE or Spectrogram processing may help the model differentiate the two. 
 
 The majority of the recorded samples where predicted to be noise. At this stage of development, I didn’t want to listen to ~23 hours of silence because I was expecting some prediction mistakes. Instead I did spot checks of different samples and found that the model was doing a great job. I did not find any instance where the model label a siren as being noise with high confidence. 
@@ -148,7 +148,7 @@ There were a few instance where the model was very uncertain, having around 50% 
 I did a number of iterations on this process, running the model, collecting samples, correcting labels, and retraining. From doing I came away with a more accurate model and some observations. Sirens are a continual sound that will last much longer than the 2 second sample. While it is insightful to look at the accuracy of predicting a single sample, operationally the sensor should look for multiple consecutive samples where is a siren is detected. When this filtering of the predictions was used, it appeared that the sensor was working flawlessly. It did not appear the miss any siren events or have any false detections. Time to formally verify this!
 
 ## Evaluation
----
+
 While I had been doing some rough confirmation of performance using the approach I outlined above, to really evaluate the system I needed a more formal methodology. In order to capture a range of environmental noises, I let the sensor run for 24 hours. I then went and listened to 24 hours of recordings, broken up into 2 second clips, and added ground truth data to compare the predictions to. This was not fun. Luckily, using VLC, I was able to speed up the playback. 
 
 After all that listening, I finally had some ground truth data. With this, I could generate a confusion matrix.
@@ -251,7 +251,7 @@ After comparing true positives and false positives, it is clear that filtering t
 One clear takeaway is that if you are trying to detect continuous sound and you can afford the latency of waiting a couple samples, you should be doing some filtering. 
 
 ## Sample resolution: 8KHz vs 16KHz
----
+
 There is a direct relationship between the amount of compute and memory you need, and the sample rate of your data. Audio recorded at 8KHz means that there 8,000 samples being produced every second, 16,000 samples with 16KHz. 16KHz audio seems to be a good default for getting started. Useful sized samples can fit into memory and there is not too latency in processing them. While using 2 second samples at 16KHz, I did not have enough memory to allocate 2 buffers in order to continuously process the audio. To allow for this, I decided to investigate using 8KHz audio.
 
 Using common tools, it is pretty easy to downsample audio to a lower sample rate. On a Mac, the following command will downsample all the audio in a directory to 8KHz.
