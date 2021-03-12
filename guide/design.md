@@ -69,4 +69,4 @@ TF Micro can compile binaries for a number of different platforms and boards. Th
 
 For this project, I am going to be using Arduino to program the microcontroller. It gives more flexibility around what development board can be used and there are lots of 3rd party libraries. 
 
-### [Next Chapter: Building a Sensor]("./design.md")
+### [Next Chapter: Building a Sensor](./build.md)
