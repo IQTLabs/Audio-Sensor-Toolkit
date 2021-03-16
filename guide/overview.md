@@ -1,6 +1,7 @@
 # Overview
 
 ![boards](./media/artsy.jpg)
+
 I have been working with embedded systems for a rather long  time. I am by no means an expert, but I have managed to keep up with the different embedded platforms as they have emerged. However, I am very much a beginner  when it comes to Machine Learning (ML) and I suspect there are a lot of other folks on the embedded side that are too. Adding ML to embedded devices has a lot of potential, and has mature to the point where it can start being useful and not just a novelty. This guide will walk through a project to build a wireless sensor that can detect sirens using ML. The core of what is presented here can be extended to easily detect other types of sounds.
 
 ## Project Goals

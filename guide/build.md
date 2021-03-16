@@ -1,5 +1,6 @@
 # Building a Sensor
 1[Picture of board](./media/boards.jpg)
+
 My general plan of attack for the project was:
 -	Build an initial dataset with sounds from the Internet
 -	Train a basic model
@@ -102,10 +103,12 @@ To correct things, I attached the boards to the lid of the container, allowing f
 
 #### Antenna Connection
 ![ufl](./media/ufl.jpg)
+
  The LoRa board allows you to either use an uFL or SMA connection to attach an antenna. I originally used an uFL connection so I could connect the board to an SMA connector outside the case. Having an external SMA connector made it easy to attach a large antenna. While this worked marvelously at first, the uFL connection is not that mechanically strong. After having to move the board around a couple times, the mechanical strain must have been too much and part of the connector popped off. After that, I switched over to an edge mounted SMA connector. It is more securely attached to the board because it attaches on both the top and bottom. The connection between the cable/antenna and connector is also a lot stronger and is screwed on instead of being press fit. Right now, I am just using a small antenna that is able to fit inside the enclosure. I think it would be possible to use a small extension cable to allow for an external SMA port, or just use an externally mounted  antenna with a long SMA cable, feed through a cable gland. My big lesson learned is not to use uFL connections if things are going to be moving around a lot. (They are also a pain to solder on.)
 
 #### Pinouts 
 ![lora](./media/lora.jpg)
+
 While the Feather is a fabulous ecosystem, you do have to pay attention to the which boards use which pins as you start combining them. This bit me when I tried to use the both the LoRa Featherwing and the Aadalogger. The Adalogger has a fixed set of pins it uses, while the LoRa board lets you configure what pins to use, by soldering some jumper wires. I, of course, just soldered the jumpers in a 1,2,3 configuration without checking. This unfortunately caused a pin “collision” and caused me a bit of confusion until I figured it out. I did get to practice my desoldering skill while correcting the jumpers. Lesson learned here, double check your pinouts before you solder!
 
 The correct wiring is:
