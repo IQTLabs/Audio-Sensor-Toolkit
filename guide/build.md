@@ -1,5 +1,5 @@
 # Building a Sensor
-
+1[Picture of board](./media/boards.jpg)
 My general plan of attack for the project was:
 -	Build an initial dataset with sounds from the Internet
 -	Train a basic model
@@ -68,7 +68,7 @@ After you have your model, you can export it either as a library or as firmware 
 To get a sense of whether my model worked in the real world, I loaded it up onto a [Arduino Nano 33 BLE Sense](https://www.arduino.cc/en/Guide/NANO33BLESense). This board is made by Arduino, so its support within the Arduino IDE has been pretty thoroughly tested. It is also officially supported by EI. I kept the evaluation simple and pulled up some Youtube clips of sirens on my laptop. Amazingly, using salvaged audio off the internet, I was able to build a working siren detector. Of course, the real question is how it would perform in a real-world environment, against real sirens.
 
 ## Building a Sensor
-
+![Lid view](./media/lid.jpg)
 While it was amazing to be able to run an ML model on a low-power MCU, being able to run it in the real world was key. Doing this meant packaging the electronics up so they could survive the elements, making sure it has enough power and finding a way to measure performance. While the Arduino Nano 33 BLE Sense is a nice board, it is sort of limited when it comes to expandability. It has a lot of built-in in sensors, but there are not many boards available to add functionality. I wanted to add the following functionality:
 
 -	**Battery power/charging** – It is possible to power the Arduino board by connecting it to a USB battery, but it is much nicer to has a JST connection so you can directly connect a LiPo battery.
@@ -76,6 +76,8 @@ While it was amazing to be able to run an ML model on a low-power MCU, being abl
 -	**LoRa radio** – This would allow for status and detection information to be remotely monitored. This could also be done using cellular. Wi-Fi would also work, but it would limit where the sensor could be placed.
 
 Adafruit designs and manufacturers electronics that are perfect for prototyping. Their products are designed to be accessible and are well documented. They have standardized a form factor for development boards known as Feather. The Feather ecosystem is large and offers a wide range of functions. There are Feather boards available the offer MicroSD storage and also ones with LoRa radios. An expansion board, like a Feather Tripler, lets you connect multiple feather boards together.
+
+![3boards](./media/3_boards.jpg)
 
 The Arduino Nano 33 BLE board is based on the Nordic RF 52840 processor. Luckily, Adafruit has recently released a nRF52840 based board, in the Feather form factor. It has a lot of onboard sensors, including a microphone. The board also includes a battery connection and charging circuit. Adafruit previously released other Nordic RF based boards and has developed software that adds [Arduino support](https://github.com/adafruit/Adafruit_nRF52_Arduino). Using the following Adafruit boards, I was able to meet my design requirements:
 -	[Featherwing tripler](https://www.adafruit.com/product/3417) This lets you easily connect together multiple Feathers
@@ -85,7 +87,7 @@ The Arduino Nano 33 BLE board is based on the Nordic RF 52840 processor. Luckily
 -	[6600mAh LiPo Battery](https://www.adafruit.com/product/353) This battery has a lot of power but is not super large. It can provide multiple weeks of power for the sensor.
 
 While it would have been possible to design a 3D printed case, I  decided to go with one of the many weatherproof cases that are available. [Polycase](https://www.polycase.com) has a lot of great choices. Since I was going to be opening it frequently to update software and collect recordings, I selected [one](https://www.polycase.com/wh-02) that is closed with latches instead of screws.
-
+![polycase sensor box](./media/sensor_box.jpg)
 
 ### Hardware Gotchas
 Whenever you build something, there are always unexpected surprise and building this audio sensor was no exception. Overall, each of the individual components worked well on there own. However, things got interesting when I started combining them together. Here are some of the things I encountered:
@@ -99,11 +101,11 @@ I learned about this issue through experience. I initially drilled a hole in the
 To correct things, I attached the boards to the lid of the container, allowing for the microphone to be positioned against the hole. The boards have a number of components on top of them, making it impossible for the microphone to be laid flat against the lid. To help better connect the mic to the hole, I cut a thin piece of foam and fitted it around the hole. I also added some thicker pieces of foam to help fill in the empty space in the enclosure. Combined, both of these things seemed to do the job.
 
 #### Antenna Connection
-
+![ufl](./media/ufl.jpg)
  The LoRa board allows you to either use an uFL or SMA connection to attach an antenna. I originally used an uFL connection so I could connect the board to an SMA connector outside the case. Having an external SMA connector made it easy to attach a large antenna. While this worked marvelously at first, the uFL connection is not that mechanically strong. After having to move the board around a couple times, the mechanical strain must have been too much and part of the connector popped off. After that, I switched over to an edge mounted SMA connector. It is more securely attached to the board because it attaches on both the top and bottom. The connection between the cable/antenna and connector is also a lot stronger and is screwed on instead of being press fit. Right now, I am just using a small antenna that is able to fit inside the enclosure. I think it would be possible to use a small extension cable to allow for an external SMA port, or just use an externally mounted  antenna with a long SMA cable, feed through a cable gland. My big lesson learned is not to use uFL connections if things are going to be moving around a lot. (They are also a pain to solder on.)
 
 #### Pinouts 
-
+![lora](./media/lora.jpg)
 While the Feather is a fabulous ecosystem, you do have to pay attention to the which boards use which pins as you start combining them. This bit me when I tried to use the both the LoRa Featherwing and the Aadalogger. The Adalogger has a fixed set of pins it uses, while the LoRa board lets you configure what pins to use, by soldering some jumper wires. I, of course, just soldered the jumpers in a 1,2,3 configuration without checking. This unfortunately caused a pin “collision” and caused me a bit of confusion until I figured it out. I did get to practice my desoldering skill while correcting the jumpers. Lesson learned here, double check your pinouts before you solder!
 
 The correct wiring is:

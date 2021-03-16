@@ -1,5 +1,5 @@
 # Design Considerations
-
+![complete](./media/complete.jpg)
 The project goal is to be able to count the number of times sirens are heard over a number of weeks. This gives us some obvious requirements to start with:
 -	We need to be able to continuously listen for sirens. If we sample only once a minute, we might miss a fire truck diving by.
 -	We need for the battery to last for multiple weeks. This means keeping the power draw low and maybe finding a way to recharge the batteries to extend the run time.
