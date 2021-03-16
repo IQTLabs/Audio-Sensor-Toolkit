@@ -1,5 +1,5 @@
 # Building a Sensor
-1[Picture of board](./media/boards.jpg)
+![Picture of board](./media/boards.jpg)
 
 My general plan of attack for the project was:
 -	Build an initial dataset with sounds from the Internet
@@ -70,6 +70,7 @@ To get a sense of whether my model worked in the real world, I loaded it up onto
 
 ## Building a Sensor
 ![Lid view](./media/lid.jpg)
+
 While it was amazing to be able to run an ML model on a low-power MCU, being able to run it in the real world was key. Doing this meant packaging the electronics up so they could survive the elements, making sure it has enough power and finding a way to measure performance. While the Arduino Nano 33 BLE Sense is a nice board, it is sort of limited when it comes to expandability. It has a lot of built-in in sensors, but there are not many boards available to add functionality. I wanted to add the following functionality:
 
 -	**Battery power/charging** – It is possible to power the Arduino board by connecting it to a USB battery, but it is much nicer to has a JST connection so you can directly connect a LiPo battery.
@@ -88,6 +89,7 @@ The Arduino Nano 33 BLE board is based on the Nordic RF 52840 processor. Luckily
 -	[6600mAh LiPo Battery](https://www.adafruit.com/product/353) This battery has a lot of power but is not super large. It can provide multiple weeks of power for the sensor.
 
 While it would have been possible to design a 3D printed case, I  decided to go with one of the many weatherproof cases that are available. [Polycase](https://www.polycase.com) has a lot of great choices. Since I was going to be opening it frequently to update software and collect recordings, I selected [one](https://www.polycase.com/wh-02) that is closed with latches instead of screws.
+
 ![polycase sensor box](./media/sensor_box.jpg)
 
 ### Hardware Gotchas
@@ -136,8 +138,21 @@ A 16-bit resolution is used for the samples, stored in 2 sequential bytes. Of co
 
 If you mix the order up, you'll notice pretty quickly. Each sample is a represented as a number and the larger the number is, the louder it is. To make something twice as loud, you multiply each sample by 2. I noticed I had screwed the endian up because the audio I was saving was really quiet, with occasional burst of distortion. 
 
+The most straightforward way to run an ML model against captured audio, is to copy samples from the processor each time the interrupt is called and accumulate them in a buffer. Once you have a complete sample, in my case 2 seconds worth of audio, you run it through the preprocessor, convert it into features and then pass it through the model. Since you have a complete copy of the audio sample in memory, you can also write it the SD card, along with the prediction from the model. This will let you listen to the audio later and evaluate how well the model did. The samples are simply an array of PCM data, only a small amount of manipulation is needed to transform it into a .wav file that can be played back on a computer.
 
-ei-helicopter-detector-arduino-1.0.4/src/edge-impulse-sdk/classifier/ei_classifier_config.h
+While this approach is great, it means that you are flip flopping between recording audio and running the model. While the model is being run, nothing is being captured, allowing you to potentially miss events. If there is enough memory available, you can use 2 buffers, allowing for one to be written to while a model is being run on the other. If your model and sample size are small enough, you can get away with using this double buffering. Assuming the times it takes to process your audio and run a model against it is less that your sample size, this approach will let you continually detect events.
+
+There is an additional approach that I tried out, which allows for using a single buffer but still provides continual detection. Instead of waiting for a sample to be completely captured before running a model on it, you do being running the model on the audio as it comes in. This operates like a circular buffer. There are 2 pointers into the buffer. One for where the next bit of audio should be written to and another for where the next audio sample should be read from. When a pointer reaches the end of a buffer, it will wrap around to the beginning. For this to work, you need to make sure the reading pointer doesn’t go past the writing pointer. The audio processing and running the model also have to be faster than the rate at which new audio is coming in. If it can’t keep up there will be gaps in the audio being feed in because samples are being written over. The whole scheme is a bit complex, and I am sure there are some subtle bugs that are lurking in my implementation. The other drawback is that it would be tough to save audio samples and model predictions for them to an SD card.  However, this could be a useful technique when you are just trying to run a model continuously, but have memory constraints.
+
+### Model Deployment
+
+![deployment](./media/deployment.png)
+
+After you have finished training a model in Edge Impulse, you can goto deployment and export it as an Arduino library. In the Arduino IDE, goto the Sketch Menu, the Include Library and then Add .ZIP Library. Find where you downloaded the .zip file with you EI model and import it. This will add it the **Libraries** folder, inside your **Arduino** folder. 
+
+The EI library for running your model can make use of CMSIS_NN for both inference and the DSP work. Unfortunately, it doesn't automatically detect that the Adafruit board is capable of CMSIS_NN. With a few tweaks though, you can lock it in. Make the following changes to the library you add into the **Arduino/Libraries** folder.
+
+***ei-project*/src/edge-impulse-sdk/classifier/ei_classifier_config.h**
 
 ```c
 #elif defined(__TARGET_CPU_CORTEX_M0) || defined(__TARGET_CPU_CORTEX_M0PLUS) || defined(__TARGET_CPU_CORTEX_M3) || defined(__TARGET_CPU_CORTEX_M4) || defined(__TARGET_CPU_CORTEX_M7)
@@ -147,7 +162,7 @@ ei-helicopter-detector-arduino-1.0.4/src/edge-impulse-sdk/classifier/ei_classifi
 #endif
 ```
 
-ei-helicopter-detector-arduino-1.0.4/src/edge-impulse-sdk/dsp/config.hpp
+***ei-project*/src/edge-impulse-sdk/dsp/config.hpp**
 
 ```c
 #else
@@ -156,11 +171,6 @@ ei-helicopter-detector-arduino-1.0.4/src/edge-impulse-sdk/dsp/config.hpp
 #endif // Mbed / ARM Core check
 ```
 
-The most straightforward way to run an ML model against captured audio, is to copy samples from the processor each time the interrupt is called and accumulate them in a buffer. Once you have a complete sample, in my case 2 seconds worth of audio, you run it through the preprocessor, convert it into features and then pass it through the model. Since you have a complete copy of the audio sample in memory, you can also write it the SD card, along with the prediction from the model. This will let you listen to the audio later and evaluate how well the model did. The samples are simply an array of PCM data, only a small amount of manipulation is needed to transform it into a .wav file that can be played back on a computer.
-
-While this approach is great, it means that you are flip flopping between recording audio and running the model. While the model is being run, nothing is being captured, allowing you to potentially miss events. If there is enough memory available, you can use 2 buffers, allowing for one to be written to while a model is being run on the other. If your model and sample size are small enough, you can get away with using this double buffering. Assuming the times it takes to process your audio and run a model against it is less that your sample size, this approach will let you continually detect events.
-
-There is an additional approach that I tried out, which allows for using a single buffer but still provides continual detection. Instead of waiting for a sample to be completely captured before running a model on it, you do being running the model on the audio as it comes in. This operates like a circular buffer. There are 2 pointers into the buffer. One for where the next bit of audio should be written to and another for where the next audio sample should be read from. When a pointer reaches the end of a buffer, it will wrap around to the beginning. For this to work, you need to make sure the reading pointer doesn’t go past the writing pointer. The audio processing and running the model also have to be faster than the rate at which new audio is coming in. If it can’t keep up there will be gaps in the audio being feed in because samples are being written over. The whole scheme is a bit complex, and I am sure there are some subtle bugs that are lurking in my implementation. The other drawback is that it would be tough to save audio samples and model predictions for them to an SD card.  However, this could be a useful technique when you are just trying to run a model continuously, but have memory constraints.
 
 ## Dataset Expansion
 
