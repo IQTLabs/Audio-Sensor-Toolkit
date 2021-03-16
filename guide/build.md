@@ -131,6 +131,26 @@ A 16-bit resolution is used for the samples, stored in 2 sequential bytes. Of co
 
 If you mix the order up, you'll notice pretty quickly. Each sample is a represented as a number and the larger the number is, the louder it is. To make something twice as loud, you multiply each sample by 2. I noticed I had screwed the endian up because the audio I was saving was really quiet, with occasional burst of distortion. 
 
+
+ei-helicopter-detector-arduino-1.0.4/src/edge-impulse-sdk/classifier/ei_classifier_config.h
+
+```c
+#elif defined(__TARGET_CPU_CORTEX_M0) || defined(__TARGET_CPU_CORTEX_M0PLUS) || defined(__TARGET_CPU_CORTEX_M3) || defined(__TARGET_CPU_CORTEX_M4) || defined(__TARGET_CPU_CORTEX_M7)
+    #define EI_CLASSIFIER_TFLITE_ENABLE_CMSIS_NN      1
+#else
+    #define EI_CLASSIFIER_TFLITE_ENABLE_CMSIS_NN      1
+#endif
+```
+
+ei-helicopter-detector-arduino-1.0.4/src/edge-impulse-sdk/dsp/config.hpp
+
+```c
+#else
+    #define EIDSP_USE_CMSIS_DSP		        1
+    #define EIDSP_LOAD_CMSIS_DSP_SOURCES    1
+#endif // Mbed / ARM Core check
+```
+
 The most straightforward way to run an ML model against captured audio, is to copy samples from the processor each time the interrupt is called and accumulate them in a buffer. Once you have a complete sample, in my case 2 seconds worth of audio, you run it through the preprocessor, convert it into features and then pass it through the model. Since you have a complete copy of the audio sample in memory, you can also write it the SD card, along with the prediction from the model. This will let you listen to the audio later and evaluate how well the model did. The samples are simply an array of PCM data, only a small amount of manipulation is needed to transform it into a .wav file that can be played back on a computer.
 
 While this approach is great, it means that you are flip flopping between recording audio and running the model. While the model is being run, nothing is being captured, allowing you to potentially miss events. If there is enough memory available, you can use 2 buffers, allowing for one to be written to while a model is being run on the other. If your model and sample size are small enough, you can get away with using this double buffering. Assuming the times it takes to process your audio and run a model against it is less that your sample size, this approach will let you continually detect events.

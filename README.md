@@ -1,5 +1,7 @@
 # Audio Sensor Toolkit
 
+![boards](./guide/media/pretty.jpg)
+
 This is a guide on how to build an Audio Sensor using Machine Learning, and helpful tools.
 
 ### [Audio Sensor Guide](./guide/overview.md)
