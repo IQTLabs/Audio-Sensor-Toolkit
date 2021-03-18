@@ -182,9 +182,30 @@ There were a few instance where the model was very uncertain, having around 50% 
 
 I did a number of iterations on this process, running the model, collecting samples, correcting labels, and retraining. From doing I came away with a more accurate model and some observations. Sirens are a continual sound that will last much longer than the 2 second sample. While it is insightful to look at the accuracy of predicting a single sample, operationally the sensor should look for multiple consecutive samples where is a siren is detected. When this filtering of the predictions was used, it appeared that the sensor was working flawlessly. It did not appear the miss any siren events or have any false detections. Time to formally verify this!
 
-## Evaluation
+## Sample resolution: 8KHz vs 16KHz
+
+There is a direct relationship between the amount of compute and memory you need, and the sample rate of your data. Audio recorded at 8KHz means that there 8,000 samples being produced every second, 16,000 samples with 16KHz. 16KHz audio seems to be a good default for getting started. Useful sized samples can fit into memory and there is not too latency in processing them. While using 2 second samples at 16KHz, I did not have enough memory to allocate 2 buffers in order to continuously process the audio. To allow for this, I decided to investigate using 8KHz audio.
+
+Using common tools, it is pretty easy to downsample audio to a lower sample rate. On a Mac, the following command will downsample all the audio in a directory to 8KHz.
+
+```bash
+for i in *.wav; do ffmpeg  -y  -i "$i"  -ac 1 -ar 8000 "8khz/${i%.*}.wav"; done
+```
+
+After doing this, I then created a new project on EI and uploaded the resampled audio. With the same signal processing and neural network configurations, performance was surprisingly similar:
+
+**8KHz Performance**
+![8khz performance](media/8k-performance.png) 
+
+**16KHz Performance**
+![16khz performance](media/16k-performance.png) 
+
+
+## A More Rigorous Evaluation
 
 While I had been doing some rough confirmation of performance using the approach I outlined above, to really evaluate the system I needed a more formal methodology. In order to capture a range of environmental noises, I let the sensor run for 24 hours. I then went and listened to 24 hours of recordings, broken up into 2 second clips, and added ground truth data to compare the predictions to. This was not fun. Luckily, using VLC, I was able to speed up the playback. 
+
+The EI Arduino library supports performing inference on a single sample or [continually](https://docs.edgeimpulse.com/docs/continuous-audio-sampling) performing inference over a sliding window and returning a moving average. In order to ensure the inference scores directly lined up with the clip that got recorded to the MicroSD card, I used single sample inference.
 
 After all that listening, I finally had some ground truth data. With this, I could generate a confusion matrix.
 
@@ -285,26 +306,22 @@ After comparing true positives and false positives, it is clear that filtering t
 
 One clear takeaway is that if you are trying to detect continuous sound and you can afford the latency of waiting a couple samples, you should be doing some filtering. 
 
-## Sample resolution: 8KHz vs 16KHz
+## Next Steps
 
-There is a direct relationship between the amount of compute and memory you need, and the sample rate of your data. Audio recorded at 8KHz means that there 8,000 samples being produced every second, 16,000 samples with 16KHz. 16KHz audio seems to be a good default for getting started. Useful sized samples can fit into memory and there is not too latency in processing them. While using 2 second samples at 16KHz, I did not have enough memory to allocate 2 buffers in order to continuously process the audio. To allow for this, I decided to investigate using 8KHz audio.
+My big take away is that the model does a good job of detecting sirens. It is unlikely that there will be a siren and the model will completely fail to detect it at all. This is great news!! It means that for future experiments I don't need to listen to all the audio... yeah! 🙌
 
-Using common tools, it is pretty easy to downsample audio to a lower sample rate. On a Mac, the following command will downsample all the audio in a directory to 8KHz.
+For future experiments I want to try running 2 identical setups side by side, one running a model with 8KHz sampling and one with 16 KHz sampling. 
 
-```bash
-for i in *.wav; do ffmpeg  -y  -i "$i"  -ac 1 -ar 8000 "8khz/${i%.*}.wav"; done
-```
+I also did all this work in the Fall of '20... and it just took me forever to write it up. Since I did it, EI released a Spectrogram Feature Generator. I am curious to see the performance difference compared with MFCC.
 
-After doing this, I then created a new project on EI and uploaded the resampled audio. With the same signal processing and neural network configurations, performance was surprisingly similar:
+I also want to implement continuous averaging against the inference results. The easiest way would be using the built-in EI function: [run_classifier_continuous()](https://github.com/edgeimpulse/inferencing-sdk-cpp/blob/master/classifier/ei_run_classifier.h#L197) and using the built in smoothing functions to filter: [ei_classifier_smooth_init() & ei_classifier_smooth_update()](https://github.com/edgeimpulse/inferencing-sdk-cpp/blob/master/classifier/ei_classifier_smooth.h#L49). There are examples of how to use them in the Accelerometer Continuous Arduino Example. 
 
-**8KHz Performance**
-![8khz performance](media/8k-performance.png) 
+If I add in this filtering, I would feel pretty confident in the result coming from the sensor... and I can finally start to answer the question of, How many times a day do you actually hear a Siren?
 
-**16KHz Performance**
-![16khz performance](media/16k-performance.png) 
+Finally, I also want to try and get the dataset I collected out there. I am pretty sure the crowd can make further improvements!
 
 ## Conclusion
 ---
 After doing all this work, my big takeaway is that I think there is something useful here. This technology is accessible and a lot more people are going to be creating ML powered sensors. Tools like Edge Impulse have made it easier to integrate ML into embedded devices. Adafruit's Feather ecosystem provides great modularity, making it easy to create a custom system. There will be certain scenarios that TinyML is better suited for than others, but this will improve over time as the hardware gets more powerful and new techniques are developed. 
 
-TinyML is exciting!
+### TinyML is exciting!
