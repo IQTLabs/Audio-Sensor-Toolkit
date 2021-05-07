@@ -38,22 +38,26 @@ samples_required = sample_sec * sample_hz
 bytes_required = samples_required * 2
 
 directory = os.fsencode(args.input)
+
+listOfFiles = list()
+for (dirpath, dirnames, filenames) in os.walk(args.input):
+    #filename = os.fsdecode(file)
+    listOfFiles += [os.path.join(dirpath, file) for file in filenames]
+    for file in filenames:
+        print("{} & {}".format(dirpath,file))
+
+
+        if os.path.isfile(dirpath + "/" + file) and file.endswith(".raw"):
     
-# iterate through all of the files in the directory
-for file in os.listdir(directory):
-
-    filename = os.fsdecode(file)
-    if os.path.isfile(filepath + "/" + filename):   # check to make sure it is file and not a directory
-        
-        f=open(filepath + "/" + filename,"rb")
-
-        raw_audio = AudioSegment.from_file(filepath + "/" +filename, format="raw",         # read the audio samples from the file 
-                                    frame_rate=sample_hz, channels=1, sample_width=2)
-        
-        pre, ext = os.path.splitext(filename) # create the .wav filename
-        wav_filename = pre+".wav"
-
-        #normalizedsound = effects.normalize(raw_audio)  # normalize the audio volume
-
-        ##normalizedsound.export(filepath + "/" + wav_filename, format="wav")  # save the .wav file
-        raw_audio.export(filepath + "/" + wav_filename, format="wav")  # save the .wav file
+            f=open(dirpath + "/" + file,"rb")
+            raw_audio = AudioSegment.from_file(dirpath + "/" +file, format="raw",
+                                        frame_rate=sample_hz, channels=1, sample_width=2)
+            pre, ext = os.path.splitext(file)
+            wav_filename = pre+".wav"
+            loud_wav_filename = pre+"-loud.wav" 
+            raw_audio.export(dirpath + "/" + wav_filename, format="wav")
+            normalizedsound = effects.normalize(raw_audio)  
+            normalizedsound.export(dirpath + "/" + loud_wav_filename, format="wav")
+            #raw_audio.export(dirpath + "/" + wav_filename, format="wav")
+            #os.remove(dirpath + "/" + file)
+            

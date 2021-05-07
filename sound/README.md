@@ -6,6 +6,15 @@ These tools are design to work with the pulse density modulation (PDM) microphon
 
 It is helpful to record samples directly with the onboard microphone to determine what the microphone is picking up. This will let you adjust the microphone's gain, which is especially helpful if you have placed the board inside a case.
 
+#### audio_recorder.ino
+This Arduino program let's you capture audio using the PDM microphone on the Adafruit Bluefruit Sense and save it to a MicroSD card. You can label the recordings as being either Sound or Noise. This will be reflected in the filename. The code was written to work with the:
+- [Adafruit Bluefruit Sense](https://learn.adafruit.com/adafruit-feather-sense)
+- Adafruit Adalogger Feather
+- OLED Feather
+- Adafruit Feather Tripler
+
+To make a recording, hold down the A or B button on the OLED Feather. To stop the recording, hold down the C button. A .raw file will be saved on the microSD card. You can use the **raw-sample-to-wav.py** program to convert it to a .wav file.
+
 #### PDM-Recorder.ino
 This is a small Arduino program that will record at a given frequency rate for a specified time. The recorded audio will be saved to onboard memory. When the recording is done, it will transfer it over serial to the python program. One pattern of bytes marks the start of a recording and another the end. This helps the Python program figure out when to start recording and when a transfer is complete.
 
